@@ -32,7 +32,7 @@ template <typename NodeID_, typename DestID_ = NodeID_,
           typename WeightT_ = NodeID_>
 class Generator {
   typedef EdgePair<NodeID_, DestID_> Edge;
-  typedef EdgePair<NodeID_, NodeWeight<NodeID_, WeightT_>> WEdge;
+  typedef EdgePair<NodeID_, NodeWeight<NodeID_, WeightT_> > WEdge;
   typedef pvector<Edge> EdgeList;
 
  public:
@@ -126,7 +126,7 @@ class Generator {
     return el;
   }
 
-  static void InsertWeights(pvector<EdgePair<NodeID_, NodeID_>> &el) {}
+  static void InsertWeights(pvector<EdgePair<NodeID_, NodeID_> > &el) {}
 
   // Overwrites existing weights with random from [1,255]
   static void InsertWeights(pvector<WEdge> &el) {

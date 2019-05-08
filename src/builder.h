@@ -55,7 +55,7 @@ class BuilderBase {
     return e.u;
   }
 
-  DestID_ GetSource(EdgePair<NodeID_, NodeWeight<NodeID_, WeightT_>> e) {
+  DestID_ GetSource(EdgePair<NodeID_, NodeWeight<NodeID_, WeightT_> > e) {
     return NodeWeight<NodeID_, WeightT_>(e.u, e.v.w);
   }
 

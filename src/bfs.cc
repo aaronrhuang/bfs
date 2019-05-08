@@ -1,6 +1,7 @@
 // Copyright (c) 2015, The Regents of the University of California (Regents)
 // See LICENSE.txt for license details
 
+#include <cstdlib>
 #include <iostream>
 #include <vector>
 
@@ -44,12 +45,13 @@ them in parent array as negative numbers. Thus the encoding of parent is:
 using namespace std;
 
 int64_t BUStep(const Graph &g, pvector<NodeID> &parent, Bitmap &front,
-               Bitmap &next) {
+               Bitmap &next, float sample=1.0) {
   int64_t awake_count = 0;
   next.reset();
   #pragma omp parallel for reduction(+ : awake_count) schedule(dynamic, 1024)
   for (NodeID u=0; u < g.num_nodes(); u++) {
-    if (parent[u] < 0) {
+    float r = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+    if (parent[u] < 0 && r <= sample) {
       for (NodeID v : g.in_neigh(u)) {
         if (front.get_bit(v)) {
           parent[u] = v;
@@ -63,9 +65,8 @@ int64_t BUStep(const Graph &g, pvector<NodeID> &parent, Bitmap &front,
   return awake_count;
 }
 
-
 int64_t TDStep(const Graph &g, pvector<NodeID> &parent,
-               SlidingQueue<NodeID> &queue) {
+               SlidingQueue<NodeID> &queue, float sample=1.0) {
   int64_t scout_count = 0;
   #pragma omp parallel
   {
@@ -75,7 +76,8 @@ int64_t TDStep(const Graph &g, pvector<NodeID> &parent,
       NodeID u = *q_iter;
       for (NodeID v : g.out_neigh(u)) {
         NodeID curr_val = parent[v];
-        if (curr_val < 0) {
+        float r = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+        if (curr_val < 0 && r <= sample) {
           if (compare_and_swap(parent[v], curr_val, u)) {
             lqueue.push_back(v);
             scout_count += -curr_val;

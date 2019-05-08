@@ -155,11 +155,11 @@ void PrintCompStats(const Graph &g, const pvector<NodeID> &comp) {
   for (NodeID comp_i : comp)
     count[comp_i] += 1;
   int k = 5;
-  vector<pair<NodeID, NodeID>> count_vector;
+  vector<pair<NodeID, NodeID> > count_vector;
   count_vector.reserve(count.size());
   for (auto kvp : count)
     count_vector.push_back(kvp);
-  vector<pair<NodeID, NodeID>> top_k = TopK(count_vector, k);
+  vector<pair<NodeID, NodeID> > top_k = TopK(count_vector, k);
   k = min(k, static_cast<int>(top_k.size()));
   cout << k << " biggest clusters" << endl;
   for (auto kvp : top_k)

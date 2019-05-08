@@ -60,12 +60,12 @@ pvector<ScoreT> PageRankPull(const Graph &g, int max_iters,
 
 
 void PrintTopScores(const Graph &g, const pvector<ScoreT> &scores) {
-  vector<pair<NodeID, ScoreT>> score_pairs(g.num_nodes());
+  vector<pair<NodeID, ScoreT> > score_pairs(g.num_nodes());
   for (NodeID n=0; n < g.num_nodes(); n++) {
     score_pairs[n] = make_pair(n, scores[n]);
   }
   int k = 5;
-  vector<pair<ScoreT, NodeID>> top_k = TopK(score_pairs, k);
+  vector<pair<ScoreT, NodeID> > top_k = TopK(score_pairs, k);
   k = min(k, static_cast<int>(top_k.size()));
   for (auto kvp : top_k)
     cout << kvp.second << ":" << kvp.first << endl;

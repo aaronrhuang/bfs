@@ -1,7 +1,13 @@
 # See LICENSE.txt for license details.
 
-CXX_FLAGS += -std=c++11 -O3 -Wall
+export CC := clang
+export CXX := $(CC)++
+
+CXX_FLAGS += -std=c++11 -O3 -Wall -v 
 PAR_FLAG = -fopenmp
+
+LDFLAGS += -L/usr/local/opt/llvm/lib -Wl,-rpath,/usr/local/opt/llvm/lib
+CPPFLAGS += -I/usr/local/opt/llvm/include -I/usr/local/opt/llvm/include/c++/v1/
 
 ifneq (,$(findstring icpc,$(CXX)))
 	PAR_FLAG = -openmp

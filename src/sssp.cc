@@ -145,7 +145,7 @@ bool SSSPVerifier(const WGraph &g, NodeID source,
   pvector<WeightT> oracle_dist(g.num_nodes(), kDistInf);
   oracle_dist[source] = 0;
   typedef pair<WeightT, NodeID> WN;
-  priority_queue<WN, vector<WN>, greater<WN>> mq;
+  priority_queue<WN, vector<WN>, greater<WN> > mq;
   mq.push(make_pair(0, source));
   while (!mq.empty()) {
     WeightT td = mq.top().first;

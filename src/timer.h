@@ -28,15 +28,15 @@ class Timer {
   }
 
   double Seconds() const {
-    return std::chrono::duration_cast<std::chrono::duration<double>>(elapsed_time_ - start_time_).count();
+    return std::chrono::duration_cast<std::chrono::duration<double> >(elapsed_time_ - start_time_).count();
   }
 
   double Millisecs() const {
-    return std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(elapsed_time_ - start_time_).count();
+    return std::chrono::duration_cast<std::chrono::duration<double, std::milli> >(elapsed_time_ - start_time_).count();
   }
 
   double Microsecs() const {
-    return std::chrono::duration_cast<std::chrono::duration<double, std::micro>>(elapsed_time_ - start_time_).count();
+    return std::chrono::duration_cast<std::chrono::duration<double, std::micro> >(elapsed_time_ - start_time_).count();
   }
 
  private:

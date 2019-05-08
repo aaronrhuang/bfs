@@ -42,7 +42,7 @@ class WriterBase {
       std::exit(-4);
     }
     if (!std::is_same<DestID_, NodeID_>::value &&
-        !std::is_same<DestID_, NodeWeight<NodeID_, SGID>>::value) {
+        !std::is_same<DestID_, NodeWeight<NodeID_, SGID> >::value) {
       std::cout << ".wsg only allowed for int32_t weights" << std::endl;
       std::exit(-8);
     }

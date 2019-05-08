@@ -144,11 +144,11 @@ pvector<ScoreT> Brandes(const Graph &g, SourcePicker<Graph> &sp,
 
 
 void PrintTopScores(const Graph &g, const pvector<ScoreT> &scores) {
-  vector<pair<NodeID, ScoreT>> score_pairs(g.num_nodes());
+  vector<pair<NodeID, ScoreT> > score_pairs(g.num_nodes());
   for (NodeID n : g.vertices())
     score_pairs[n] = make_pair(n, scores[n]);
   int k = 5;
-  vector<pair<ScoreT, NodeID>> top_k = TopK(score_pairs, k);
+  vector<pair<ScoreT, NodeID> > top_k = TopK(score_pairs, k);
   for (auto kvp : top_k)
     cout << kvp.second << ":" << kvp.first << endl;
 }
@@ -184,7 +184,7 @@ bool BCVerifier(const Graph &g, SourcePicker<Graph> &sp, NodeID num_iters,
       }
     }
     // Get lists of vertices at each depth
-    vector<vector<NodeID>> verts_at_depth;
+    vector<vector<NodeID> > verts_at_depth;
     for (NodeID n : g.vertices()) {
       if (depths[n] != -1) {
         if (depths[n] >= static_cast<int>(verts_at_depth.size()))
