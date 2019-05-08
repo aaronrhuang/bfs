@@ -140,32 +140,59 @@ pvector<NodeID> DOBFS(const Graph &g, NodeID source, int alpha = 15,
   int64_t edges_to_check = g.num_edges_directed();
   int64_t scout_count = g.out_degree(source);
   while (!queue.empty()) {
-    if (scout_count > edges_to_check / alpha) {
-      int64_t awake_count, old_awake_count;
-      TIME_OP(t, QueueToBitmap(queue, front));
-      PrintStep("e", t.Seconds());
-      awake_count = queue.size();
-      queue.slide_window();
-      do {
-        t.Start();
-        old_awake_count = awake_count;
-        awake_count = BUStep(g, parent, front, curr);
-        front.swap(curr);
-        t.Stop();
-        PrintStep("bu", t.Seconds(), awake_count);
-      } while ((awake_count >= old_awake_count) ||
-               (awake_count > g.num_nodes() / beta));
-      TIME_OP(t, BitmapToQueue(g, front, queue));
-      PrintStep("c", t.Seconds());
-      scout_count = 1;
-    } else {
+
+    int64_t awake_count, old_awake_count;
+    TIME_OP(t, QueueToBitmap(queue, front));
+    PrintStep("e", t.Seconds());
+    awake_count = queue.size();
+    queue.slide_window();
+    do {
       t.Start();
-      edges_to_check -= scout_count;
-      scout_count = TDStep(g, parent, queue);
-      queue.slide_window();
+      old_awake_count = awake_count;
+      awake_count = BUStep(g, parent, front, curr, edges_to_check/g.num_nodes());
+      front.swap(curr);
       t.Stop();
-      PrintStep("td", t.Seconds(), queue.size());
-    }
+      PrintStep("bu", t.Seconds(), awake_count);
+    } while ((awake_count >= old_awake_count) ||
+             (awake_count > g.num_nodes() / beta));
+    TIME_OP(t, BitmapToQueue(g, front, queue));
+    PrintStep("c", t.Seconds());
+    scout_count = 1;
+
+    t.Start();
+    edges_to_check -= scout_count;
+    scout_count = TDStep(g, parent, queue);
+    queue.slide_window();
+    t.Stop();
+    PrintStep("td", t.Seconds(), queue.size());
+
+
+    // if (scout_count > edges_to_check / alpha) {
+    //   int64_t awake_count, old_awake_count;
+    //   TIME_OP(t, QueueToBitmap(queue, front));
+    //   PrintStep("e", t.Seconds());
+    //   awake_count = queue.size();
+    //   queue.slide_window();
+    //   do {
+    //     t.Start();
+    //     old_awake_count = awake_count;
+    //     awake_count = BUStep(g, parent, front, curr);
+    //     front.swap(curr);
+    //     t.Stop();
+    //     PrintStep("bu", t.Seconds(), awake_count);
+    //   } while ((awake_count >= old_awake_count) ||
+    //            (awake_count > g.num_nodes() / beta));
+    //   TIME_OP(t, BitmapToQueue(g, front, queue));
+    //   PrintStep("c", t.Seconds());
+    //   scout_count = 1;
+    // } else {
+    //   t.Start();
+    //   edges_to_check -= scout_count;
+    //   scout_count = TDStep(g, parent, queue);
+    //   queue.slide_window();
+    //   t.Stop();
+    //   PrintStep("td", t.Seconds(), queue.size());
+    // }
   }
   #pragma omp parallel for
   for (NodeID n = 0; n < g.num_nodes(); n++)
