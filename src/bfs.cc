@@ -149,7 +149,7 @@ pvector<NodeID> DOBFS(const Graph &g, NodeID source, int alpha = 15,
     do {
       t.Start();
       old_awake_count = awake_count;
-      awake_count = BUStep(g, parent, front, curr, edges_to_check/g.num_nodes());
+      awake_count = BUStep(g, parent, front, curr, 1-(edges_to_check/g.num_edges_directed()));
       front.swap(curr);
       t.Stop();
       PrintStep("bu", t.Seconds(), awake_count);
