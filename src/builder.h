@@ -13,6 +13,7 @@
 
 #include "command_line.h"
 #include "generator.h"
+#include "compressed_graph.h"
 #include "graph.h"
 #include "platform_atomics.h"
 #include "pvector.h"
@@ -241,6 +242,122 @@ class BuilderBase {
       g = MakeGraphFromEL(el);
     }
     return SquishGraph(g);
+  }
+
+  size_t computeRowEncodingBytes(const CSRGraph<NodeID_, DestID_, invert> &g, int64_t row, bool out_vertices) {
+    size_t bytesToEncode = 8; // Starting bytes for degree of vertex and vertex number of start vertex
+
+    auto neighbor_list = out_vertices? g.out_neigh(row) : g.in_neigh(row);
+
+    DestID_ prev_vertex = *neighbor_list.begin();
+
+    for(auto curr = (1 + neighbor_list.begin() ); curr < neighbor_list.end(); ++curr) {
+      bytesToEncode += sizeof(vertexOffset);
+      if (*curr - prev_vertex >= MAX_OFFSET) {
+        bytesToEncode += sizeof(DestID_);
+      }
+      prev_vertex = *curr;
+    }
+    return bytesToEncode;
+  }
+
+  size_t computeBytesForDeltaGraph(const CSRGraph<NodeID_, DestID_, invert> &g,
+                                   pvector<DestID_>& rowLengths, bool out_vertices) {
+
+    size_t totalBytes = 0;
+
+#pragma omp parallel for reduction(+ : totalBytes)
+    for(int64_t n = 0; n < g.num_nodes(); ++n) {
+      size_t bytes_for_row = computeRowEncodingBytes(g, n, out_vertices);
+      rowLengths[n] = bytes_for_row;
+      totalBytes += bytes_for_row;
+    }
+
+    return totalBytes;
+  }
+
+  void applyDeltaCompress(const CSRGraph<NodeID_, DestID_, invert> &g,
+                          size_t totalBytes, const pvector<SGOffset> &offsets,
+                          DestID_** index_ptr, DestID_** neigh_ptr, bool out_vertices) {
+
+    const int64_t vertices = g.num_nodes();
+    *index_ptr = new DestID_[vertices + 1];
+    *neigh_ptr = new DestID_[totalBytes];
+
+    DestID_* index = *index_ptr;
+    DestID_* neighs = *neigh_ptr;
+
+#pragma omp parallel for
+    for(int64_t n = 0; n <= vertices; ++n) {
+      index[n] = offsets[n];
+    }
+
+#pragma omp parallel for
+    for(int64_t n = 0; n < vertices; ++n) {
+
+      // auto end_ptr = (vertexOffset *)index[n+1];
+      DestID_* start_ptr = (DestID_ *)((uint64_t)neighs +  index[n]);
+
+      *start_ptr = out_vertices? (NodeID_) g.out_degree(n) : (NodeID_) g.in_degree(n);
+      ++start_ptr;
+
+      auto neighbor_list = out_vertices? g.out_neigh(n) : g.in_neigh(n);
+      *start_ptr = *neighbor_list.begin();
+      ++start_ptr;
+
+      auto vOffset_ptr = (vertexOffset *) start_ptr;
+
+      DestID_ prev_vertex = *neighbor_list.begin();
+
+      for(auto curr = (1 + neighbor_list.begin()); curr < neighbor_list.end(); ++curr) {
+        const int64_t delta = (*curr - prev_vertex);
+        if ( delta < MAX_OFFSET) {
+          *vOffset_ptr = delta;
+          ++vOffset_ptr;
+        } else {
+          *vOffset_ptr = MAX_OFFSET;
+          ++vOffset_ptr;
+          auto write_ptr = (NodeID_ *)vOffset_ptr;
+          *write_ptr = *curr;
+          ++write_ptr;
+          vOffset_ptr = (vertexOffset *)write_ptr;
+        }
+
+        prev_vertex = *curr;
+      }
+    }
+
+  }
+
+
+  DeltaGraph<NodeID_, DestID_, invert> MakeDeltaGraph() {
+    CSRGraph<NodeID_, DestID_, invert> g = MakeGraph();
+
+    Timer t;
+    t.Start();
+    DestID_ *out_index, *out_neighs, *in_index, *in_neighs;
+    pvector<DestID_> rowLengths(g.num_nodes());
+    size_t totalBytes = computeBytesForDeltaGraph(g, rowLengths, true);
+
+    pvector<SGOffset> offsets = ParallelPrefixSum(rowLengths);
+    applyDeltaCompress(g, totalBytes, offsets, &out_index, &out_neighs, true);
+
+
+    if (g.directed()) {
+      if (invert) {
+        totalBytes = computeBytesForDeltaGraph(g, rowLengths, false);
+        offsets = ParallelPrefixSum(rowLengths);
+        applyDeltaCompress(g, totalBytes, offsets, &in_index, &in_neighs, false);
+      }
+      t.Stop();
+      PrintTime("Compress Time", t.Seconds());
+      return DeltaGraph<NodeID_, DestID_, invert>(g.num_nodes(), g.num_edges(), out_index,
+                                                out_neighs, in_index, in_neighs);
+    } else {
+      t.Stop();
+      PrintTime("Compress Time", t.Seconds());
+      return DeltaGraph<NodeID_, DestID_, invert>(g.num_nodes(), g.num_edges(), out_index, out_neighs);
+    }
   }
 
   // Relabels (and rebuilds) graph by order of decreasing degree
