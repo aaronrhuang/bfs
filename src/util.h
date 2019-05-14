@@ -26,6 +26,10 @@ void PrintLabel(const std::string &label, const std::string &val) {
   printf("%-21s%7s\n", (label + ":").c_str(), val.c_str());
 }
 
+void PrintData(const std::string &s, double data) {
+  printf("%-21s%3.5lf\n", (s + ":").c_str(), data);
+}
+
 void PrintTime(const std::string &s, double seconds) {
   printf("%-21s%3.5lf\n", (s + ":").c_str(), seconds);
 }

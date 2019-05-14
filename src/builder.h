@@ -253,7 +253,7 @@ class BuilderBase {
 
     for(auto curr = (1 + neighbor_list.begin() ); curr < neighbor_list.end(); ++curr) {
       bytesToEncode += sizeof(vertexOffset);
-      if (*curr - prev_vertex >= MAX_OFFSET) {
+      if (*curr - prev_vertex >= (DestID_)MAX_OFFSET) {
         bytesToEncode += sizeof(DestID_);
       }
       prev_vertex = *curr;
@@ -333,6 +333,10 @@ class BuilderBase {
   DeltaGraph<NodeID_, DestID_, invert> MakeDeltaGraph() {
     CSRGraph<NodeID_, DestID_, invert> g = MakeGraph();
 
+    const double conversion = 1024*1024;
+    double original_size = g.get_byte_size() / conversion;
+    PrintData("Original size (MB)", original_size);
+
     Timer t;
     t.Start();
     DestID_ *out_index, *out_neighs, *in_index, *in_neighs;
@@ -350,13 +354,23 @@ class BuilderBase {
         applyDeltaCompress(g, totalBytes, offsets, &in_index, &in_neighs, false);
       }
       t.Stop();
+      auto delta_g = DeltaGraph<NodeID_, DestID_, invert>(g.num_nodes(), g.num_edges(), out_index,
+                                                          out_neighs, in_index, in_neighs);
+
+      double new_size = delta_g.get_byte_size() / conversion;
+      PrintData("Delta size (MB)", new_size);
+      PrintData("Compression ratio", new_size/original_size);
       PrintTime("Compress Time", t.Seconds());
-      return DeltaGraph<NodeID_, DestID_, invert>(g.num_nodes(), g.num_edges(), out_index,
-                                                out_neighs, in_index, in_neighs);
+      return delta_g;
     } else {
       t.Stop();
+      auto delta_g = DeltaGraph<NodeID_, DestID_, invert>(g.num_nodes(), g.num_edges(), out_index, out_neighs);
+      double new_size = delta_g.get_byte_size() / conversion;
+      PrintData("Delta size (MB)", new_size);
+      PrintData("Compression ratio", new_size/original_size);
       PrintTime("Compress Time", t.Seconds());
-      return DeltaGraph<NodeID_, DestID_, invert>(g.num_nodes(), g.num_edges(), out_index, out_neighs);
+      return delta_g;
+
     }
   }
 

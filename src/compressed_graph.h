@@ -2,7 +2,7 @@
 #define BFS_COMPRESSED_GRAPH_H
 
 typedef uint16_t vertexOffset;
-#define MAX_OFFSET ( (1u << 16u) - 1 )
+#define MAX_OFFSET ( (1u << (8*sizeof(vertexOffset))) - 1 )
 
 template <class NodeID_, class DestID_ = NodeID_, bool MakeInverse = true>
 class DeltaGraph {
@@ -131,6 +131,15 @@ public:
 
   Range<NodeID_> vertices() const {
     return Range<NodeID_>(num_nodes());
+  }
+
+  size_t get_byte_size() {
+    size_t byteSize = sizeof(DestID_) * (num_nodes_ + 1);
+    byteSize += out_index_[num_nodes_];
+    if (MakeInverse) {
+      byteSize *= 2;
+    }
+    return byteSize;
   }
 
 private:

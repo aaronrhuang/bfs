@@ -3,7 +3,7 @@
 export CC := clang
 export CXX := $(CC)++
 
-CXX_FLAGS += -std=c++11 -O3 -Wall -v 
+CXX_FLAGS += -std=c++11 -O3 -Wall -v
 PAR_FLAG = -fopenmp
 
 LDFLAGS += -L/usr/local/opt/llvm/lib -Wl,-rpath,/usr/local/opt/llvm/lib
@@ -22,7 +22,7 @@ ifneq ($(SERIAL), 1)
 	CXX_FLAGS += $(PAR_FLAG)
 endif
 
-KERNELS = bc bfs cc cc_sv pr sssp tc
+KERNELS = bc bfs compressed_bfs cc cc_sv pr sssp tc
 SUITE = $(KERNELS) converter
 
 .PHONY: all
