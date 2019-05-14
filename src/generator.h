@@ -79,13 +79,14 @@ class Generator {
   }
 
   EdgeList MakeRMatEL() {
+
     const float A = 0.57f, B = 0.19f, C = 0.19f;
     EdgeList el(num_edges_);
-    #pragma omp parallel
+#pragma omp parallel
     {
       std::mt19937 rng;
       std::uniform_real_distribution<float> udist(0, 1.0f);
-      #pragma omp for
+#pragma omp for
       for (int64_t block=0; block < num_edges_; block+=block_size) {
         rng.seed(kRandSeed + block/block_size);
         for (int64_t e=block; e < std::min(block+block_size, num_edges_); e++) {
@@ -117,10 +118,11 @@ class Generator {
     EdgeList el;
     Timer t;
     t.Start();
-    if (uniform)
+    if (uniform) {
       el = MakeUniformEL();
-    else
+    } else {
       el = MakeRMatEL();
+    }
     t.Stop();
     PrintTime("Generate Time", t.Seconds());
     return el;

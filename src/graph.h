@@ -254,6 +254,15 @@ class CSRGraph {
     return Range<NodeID_>(num_nodes());
   }
 
+  size_t get_byte_size() {
+    size_t byteSize = sizeof(DestID_ *) * (num_nodes_ + 1);
+    byteSize += ( sizeof(NodeID_) * (out_index_[num_nodes_] - out_index_[0]));
+    if (MakeInverse) {
+      byteSize *= 2;
+    }
+    return byteSize;
+  }
+
  private:
   bool directed_;
   int64_t num_nodes_;

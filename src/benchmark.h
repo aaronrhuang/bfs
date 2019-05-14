@@ -33,6 +33,7 @@ typedef int32_t WeightT;
 typedef NodeWeight<NodeID, WeightT> WNode;
 
 typedef CSRGraph<NodeID> Graph;
+typedef DeltaGraph<NodeID> CompGraph;
 typedef CSRGraph<NodeID, WNode> WGraph;
 
 typedef BuilderBase<NodeID, NodeID, WeightT> Builder;
