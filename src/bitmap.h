@@ -36,6 +36,10 @@ class Bitmap {
     std::fill(start_, end_, 0);
   }
 
+  void unset_bit(size_t pos) {
+    start_[word_offset(pos)] &= ((uint64_t) 0l << bit_offset(pos));
+  }
+
   void set_bit(size_t pos) {
     start_[word_offset(pos)] |= ((uint64_t) 1l << bit_offset(pos));
   }

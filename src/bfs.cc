@@ -46,12 +46,14 @@ using namespace std;
 
 int64_t BUStep(const Graph &g, pvector<NodeID> &parent, Bitmap &front,
                Bitmap &next, float sample=1.0) {
+
   int64_t awake_count = 0;
   next.reset();
+  Bitmap mark(g.num_nodes());
+
   #pragma omp parallel for reduction(+ : awake_count) schedule(dynamic, 1024)
   for (NodeID u=0; u < g.num_nodes(); u++) {
-    float r = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-    if (parent[u] < 0 && r <= sample) {
+    if (parent[u] < 0) {
       for (NodeID v : g.in_neigh(u)) {
         if (front.get_bit(v)) {
           parent[u] = v;
@@ -76,8 +78,7 @@ int64_t TDStep(const Graph &g, pvector<NodeID> &parent,
       NodeID u = *q_iter;
       for (NodeID v : g.out_neigh(u)) {
         NodeID curr_val = parent[v];
-        float r = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-        if (curr_val < 0 && r <= sample) {
+        if (curr_val < 0) {
           if (compare_and_swap(parent[v], curr_val, u)) {
             lqueue.push_back(v);
             scout_count += -curr_val;
@@ -89,7 +90,6 @@ int64_t TDStep(const Graph &g, pvector<NodeID> &parent,
   }
   return scout_count;
 }
-
 
 void QueueToBitmap(const SlidingQueue<NodeID> &queue, Bitmap &bm) {
   #pragma omp parallel for
@@ -106,8 +106,9 @@ void BitmapToQueue(const Graph &g, const Bitmap &bm,
     QueueBuffer<NodeID> lqueue(queue);
     #pragma omp for
     for (NodeID n=0; n < g.num_nodes(); n++)
-      if (bm.get_bit(n))
+      if (bm.get_bit(n)){
         lqueue.push_back(n);
+      }
     lqueue.flush();
   }
   queue.slide_window();
@@ -140,24 +141,27 @@ pvector<NodeID> DOBFSR(const Graph &g, NodeID source, int alpha = 15,
   int64_t edges_to_check = g.num_edges_directed();
   int64_t scout_count = g.out_degree(source);
   while (!queue.empty()) {
-    int64_t awake_count, old_awake_count;
-    TIME_OP(t, QueueToBitmap(queue, front));
-    PrintStep("e", t.Seconds());
-    awake_count = queue.size();
-    queue.slide_window();
-    do {
-      t.Start();
-      old_awake_count = awake_count;
-      awake_count = BUStep(g, parent, front, curr, 1-(edges_to_check/g.num_edges_directed()));
-      front.swap(curr);
-      t.Stop();
-      PrintStep("bu", t.Seconds(), awake_count);
-    } while ((awake_count >= old_awake_count) ||
-             (awake_count > g.num_nodes() / beta));
-    TIME_OP(t, BitmapToQueue(g, front, queue));
-    PrintStep("c", t.Seconds());
-    scout_count = 1;
-
+    cout << "ratio " << scout_count <<" : "<< edges_to_check << '\n';
+    if ((float)edges_to_check/g.num_edges_directed() < 0.5) {
+      int64_t awake_count, old_awake_count;
+      TIME_OP(t, QueueToBitmap(queue, front));
+      PrintStep("e", t.Seconds());
+      awake_count = queue.size();
+      queue.slide_window();
+      do {
+        t.Start();
+        old_awake_count = awake_count;
+        // cout << "ratio " << edges_to_check / g.num_edges_directed() << '\n';
+        awake_count = BUStep(g, parent, front, curr,
+          1.2-((float)edges_to_check/g.num_edges_directed()));
+        front.swap(curr);
+        t.Stop();
+        PrintStep("bu", t.Seconds(), awake_count);
+      } while ((awake_count >= old_awake_count) ||
+               (awake_count > g.num_nodes() / beta));
+      TIME_OP(t, BitmapToQueue(g, front, queue));
+      PrintStep("c", t.Seconds());
+    }
     t.Start();
     edges_to_check -= scout_count;
     scout_count = TDStep(g, parent, queue);
@@ -191,7 +195,21 @@ pvector<NodeID> DOBFS(const Graph &g, NodeID source, int alpha = 15,
   front.reset();
   int64_t edges_to_check = g.num_edges_directed();
   int64_t scout_count = g.out_degree(source);
+  alpha = (int)((float)g.num_edges_directed()/g.num_nodes());
   while (!queue.empty()) {
+    // alpha = (float)g.num_nodes() / (float)g.num_edges_directed();
+    // TIME_OP(t, QueueToBitmap(queue, front));
+    // int count = 0;
+    // for (NodeID u=0; u < g.num_nodes(); u++) {
+    //   if (front.get_bit(u)) {
+    //     count++;
+    //   }
+    // }
+    // cout << queue.size() << " " << scout_count << " " << edges_to_check <<'\n';
+    if (scout_count > 1) {
+      alpha = (int)((float)scout_count/queue.size());
+    }
+    // cout << g.num_nodes() << " " << g.num_edges_directed() << '\n';
     if (scout_count > edges_to_check / alpha) {
       int64_t awake_count, old_awake_count;
       TIME_OP(t, QueueToBitmap(queue, front));
