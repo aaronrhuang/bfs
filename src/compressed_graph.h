@@ -27,13 +27,13 @@ public:
                out_index_(nullptr), out_neighbors_(nullptr),
                in_index_(nullptr), in_neighbors_(nullptr) {}
 
-  DeltaGraph(int64_t num_nodes, int64_t num_edges, DestID_* index, DestID_* neighs) :
+  DeltaGraph(int64_t num_nodes, int64_t num_edges, int64_t* index, DestID_* neighs) :
           directed_(false), num_nodes_(num_nodes), num_edges_(num_edges),
           out_index_(index), out_neighbors_(neighs),
           in_index_(index), in_neighbors_(neighs) {}
 
-  DeltaGraph(int64_t num_nodes, int64_t num_edges, DestID_* out_index, DestID_* out_neighs,
-           DestID_* in_index, DestID_* in_neighs) :
+  DeltaGraph(int64_t num_nodes, int64_t num_edges, int64_t* out_index, DestID_* out_neighs,
+           int64_t* in_index, DestID_* in_neighs) :
           directed_(true), num_nodes_(num_nodes), num_edges_(num_edges),
           out_index_(out_index), out_neighbors_(out_neighs),
           in_index_(in_index), in_neighbors_(in_neighs) {}
@@ -134,7 +134,7 @@ public:
   }
 
   size_t get_byte_size() {
-    size_t byteSize = sizeof(DestID_) * (num_nodes_ + 1);
+    size_t byteSize = sizeof(int64_t) * (num_nodes_ + 1);
     byteSize += out_index_[num_nodes_];
     if (MakeInverse) {
       byteSize *= 2;
@@ -146,9 +146,9 @@ private:
   bool directed_;
   int64_t num_nodes_;
   int64_t num_edges_;
-  DestID_* out_index_;
+  int64_t* out_index_;
   DestID_*  out_neighbors_;
-  DestID_* in_index_;
+  int64_t* in_index_;
   DestID_*  in_neighbors_;
 };
 

@@ -266,7 +266,7 @@ class BuilderBase {
 
     size_t totalBytes = 0;
 
-#pragma omp parallel for reduction(+ : totalBytes)
+//#pragma omp parallel for reduction(+ : totalBytes)
     for(int64_t n = 0; n < g.num_nodes(); ++n) {
       size_t bytes_for_row = computeRowEncodingBytes(g, n, out_vertices);
       rowLengths[n] = bytes_for_row;
@@ -278,13 +278,12 @@ class BuilderBase {
 
   void applyDeltaCompress(const CSRGraph<NodeID_, DestID_, invert> &g,
                           size_t totalBytes, const pvector<SGOffset> &offsets,
-                          DestID_** index_ptr, DestID_** neigh_ptr, bool out_vertices) {
+                          int64_t** index_ptr, DestID_** neigh_ptr, bool out_vertices) {
 
     const int64_t vertices = g.num_nodes();
-    *index_ptr = new DestID_[vertices + 1];
-    *neigh_ptr = new DestID_[totalBytes];
-
-    DestID_* index = *index_ptr;
+    *index_ptr = new int64_t[vertices + 1];
+    *neigh_ptr = new DestID_[totalBytes]; 
+    int64_t* index = *index_ptr;
     DestID_* neighs = *neigh_ptr;
 
 #pragma omp parallel for
@@ -294,27 +293,22 @@ class BuilderBase {
 
 #pragma omp parallel for
     for(int64_t n = 0; n < vertices; ++n) {
-
       // auto end_ptr = (vertexOffset *)index[n+1];
       DestID_* start_ptr = (DestID_ *)((uint64_t)neighs +  index[n]);
-
       *start_ptr = out_vertices? (NodeID_) g.out_degree(n) : (NodeID_) g.in_degree(n);
       ++start_ptr;
-
       auto neighbor_list = out_vertices? g.out_neigh(n) : g.in_neigh(n);
       *start_ptr = *neighbor_list.begin();
       ++start_ptr;
 
       auto vOffset_ptr = (vertexOffset *) start_ptr;
-
       DestID_ prev_vertex = *neighbor_list.begin();
-
       for(auto curr = (1 + neighbor_list.begin()); curr < neighbor_list.end(); ++curr) {
         const int64_t delta = (*curr - prev_vertex);
         if ( delta < MAX_OFFSET) {
-          *vOffset_ptr = delta;
+	  *vOffset_ptr = delta;
           ++vOffset_ptr;
-        } else {
+	} else {
           *vOffset_ptr = MAX_OFFSET;
           ++vOffset_ptr;
           auto write_ptr = (NodeID_ *)vOffset_ptr;
@@ -339,7 +333,8 @@ class BuilderBase {
 
     Timer t;
     t.Start();
-    DestID_ *out_index, *out_neighs, *in_index, *in_neighs;
+    int64_t *in_index, *out_index;
+    DestID_ *out_neighs, *in_neighs;
     pvector<DestID_> rowLengths(g.num_nodes());
     size_t totalBytes = computeBytesForDeltaGraph(g, rowLengths, true);
 
