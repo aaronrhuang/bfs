@@ -195,9 +195,9 @@ pvector<NodeID> DOBFS(const Graph &g, NodeID source, int alpha = 15,
   front.reset();
   int64_t edges_to_check = g.num_edges_directed();
   int64_t scout_count = g.out_degree(source);
-  alpha = (int)((float)g.num_edges_directed()/g.num_nodes());
+  alpha = (float)g.num_edges_directed()/g.num_nodes();
+  float og_alpha = alpha;
   while (!queue.empty()) {
-    // alpha = (float)g.num_nodes() / (float)g.num_edges_directed();
     // TIME_OP(t, QueueToBitmap(queue, front));
     // int count = 0;
     // for (NodeID u=0; u < g.num_nodes(); u++) {
@@ -205,12 +205,15 @@ pvector<NodeID> DOBFS(const Graph &g, NodeID source, int alpha = 15,
     //     count++;
     //   }
     // }
-    // cout << queue.size() << " " << scout_count << " " << edges_to_check <<'\n';
-    if (scout_count > 1) {
-      alpha = (int)((float)scout_count/queue.size());
+
+    // int temp = (float)scout_count/g.num_nodes();
+    float temp = ((float)scout_count/queue.size());
+    if (temp > 1 && alpha<1000) {
+      alpha = temp;
+    } else {
+      alpha = og_alpha;
     }
-    // cout << g.num_nodes() << " " << g.num_edges_directed() << '\n';
-    if (scout_count > edges_to_check / alpha) {
+    if (scout_count > (float)edges_to_check / alpha) {
       int64_t awake_count, old_awake_count;
       TIME_OP(t, QueueToBitmap(queue, front));
       PrintStep("e", t.Seconds());
@@ -223,6 +226,11 @@ pvector<NodeID> DOBFS(const Graph &g, NodeID source, int alpha = 15,
         front.swap(curr);
         t.Stop();
         PrintStep("bu", t.Seconds(), awake_count);
+
+        int temp = (float)scout_count/awake_count;
+        if (temp > 1 && temp < 1000) {
+          beta = temp;
+        }
       } while ((awake_count >= old_awake_count) ||
                (awake_count > g.num_nodes() / beta));
       TIME_OP(t, BitmapToQueue(g, front, queue));
